@@ -10,6 +10,7 @@ public class AdaBoost {
         File file = new File("./data/student.txt");
 
         System.out.println(Files.readAllLines(file.toPath()));
+        System.out.println("NEE");
     }
 
 }
