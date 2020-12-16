@@ -2,9 +2,7 @@ package ru.datamining.adaboost.adaboost;
 
 import java.util.List;
 
-public interface Classifier {
-
-    enum ClassificationType { NUMERICAL, NOMINAL }
+public interface Predictor {
 
     void train(List<List<String>> data, List<String> expectedResult);
 
