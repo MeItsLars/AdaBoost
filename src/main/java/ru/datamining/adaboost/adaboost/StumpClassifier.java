@@ -5,12 +5,12 @@ import java.util.List;
 public class StumpClassifier implements Predictor {
 
     @Override
-    public void train(List<List<String>> data, List<String> expectedResult) {
+    public void train(List<List<Double>> data, List<Double> expectedResult) {
 
     }
 
     @Override
-    public String predict(List<String> entry) {
-        return null;
+    public double predict(List<Double> entry) {
+        return 0;
     }
 }

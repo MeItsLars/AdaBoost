@@ -4,8 +4,8 @@ import java.util.List;
 
 public interface Predictor {
 
-    void train(List<List<String>> data, List<String> expectedResult);
+    void train(List<List<Double>> data, List<Double> expectedResult);
 
-    String predict(List<String> entry);
+    double predict(List<Double> entry);
 
 }
