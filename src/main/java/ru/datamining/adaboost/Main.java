@@ -69,14 +69,14 @@ public class Main {
         List<Double> expectedResults = new ArrayList<>();
 
         for (List<Double> data : mappedInputData) {
-            dataset.add(data.subList(0, 32));
+            dataset.add(data.subList(30, 32));
             expectedResults.add(data.get(32));
         }
 
-        List<List<Double>> trainData = dataset.subList(0, dataset.size());
-        List<Double> trainResults = expectedResults.subList(0, expectedResults.size());
-        List<List<Double>> testData = dataset.subList(0, dataset.size());
-        List<Double> testResults = expectedResults.subList(0, expectedResults.size());
+        List<List<Double>> trainData = dataset.subList(0, 600);
+        List<Double> trainResults = expectedResults.subList(0, 600);
+        List<List<Double>> testData = dataset.subList(0, 600);
+        List<Double> testResults = expectedResults.subList(0, 600);
 
         System.out.println("Training AdaBoost...");
         AdaBoost adaBoost = new AdaBoost();

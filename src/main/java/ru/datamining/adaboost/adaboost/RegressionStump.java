@@ -1,5 +1,6 @@
 package ru.datamining.adaboost.adaboost;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.LinkedList;
@@ -7,6 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
+@Getter
 public class RegressionStump implements Predictor {
 
     private final int attributeIndex;
