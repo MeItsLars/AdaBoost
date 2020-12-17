@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 @Getter
 public class RegressionStump implements Predictor {
 
-    private final int attributeIndex;
     private double splitPosition;
     private double leftNode;
     private double rightNode;
@@ -73,7 +72,6 @@ public class RegressionStump implements Predictor {
             }
         }
         splitPosition = bestSplit;
-        System.out.println("Index: " + attributeIndex + ", left: " + leftNode + ", right: " + rightNode + ", split: " + splitPosition);
     }
 
     @Override

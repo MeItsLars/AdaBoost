@@ -9,26 +9,16 @@ public class AdaBoost {
 
     private Map<Predictor, Double> trainedClassifiers = new HashMap<>();
 
-    public void train(List<List<Double>> dataset, List<Double> expectedResults) {
-        List<Predictor> predictors = new ArrayList<>();
-
-        for (int i = 0; i < dataset.get(0).size(); i++) {
-            predictors.add(new RegressionStump(i));
-        }
-
-        train(dataset, expectedResults, predictors);
-    }
-
-    public void train(List<List<Double>> dataset, List<Double> expectedResults, List<Predictor> predictors) {
+    public void train(List<List<Double>> dataset, List<Double> expectedResults, int regressorCount) {
         // Initialize sample weights
         double[] sampleWeights = new double[dataset.size()];
         Arrays.fill(sampleWeights, 1.0 / ((double) dataset.size()));
 
-        for (int i = 0; i < predictors.size(); i++) {
+        for (int i = 0; i < regressorCount; i++) {
             System.out.println("========== RUN " + i + " ==========");
             System.out.println(dataset);
             System.out.println(expectedResults);
-            Predictor predictor = predictors.get(i);
+            Predictor predictor = new RegressionStump();
 
             // Train the predictor
             predictor.train(dataset, expectedResults);
@@ -48,11 +38,10 @@ public class AdaBoost {
             trainingError += 0.001;
             double alpha = 0.5 * Math.log1p((1 - trainingError) / trainingError);
             trainedClassifiers.put(predictor, alpha);
-            System.out.println("Predictor " + ((RegressionStump) predictor).getAttributeIndex() + " priority: " + alpha);
 
             // Update data sample weights
             double beta = trainingError / (1 - trainingError);
-            if (i != predictors.size() - 1) {
+            if (i != regressorCount - 1) {
                 for (int w = 0; w < sampleWeights.length; w++) {
                     sampleWeights[w] *= Math.pow(beta, 1 - finalErrors.get(w));
                 }
