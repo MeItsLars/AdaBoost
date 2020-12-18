@@ -24,13 +24,11 @@ public class BinaryNode {
     public BinaryNode(BinaryNode parent) {
         this.parent = parent;
         this.level = parent.getLevel() + 1;
-        System.out.println("Created a new binary node at level " + level);
     }
 
     public BinaryNode() {
         this.parent = null;
         this.level = 0;
-        System.out.println("Created a new root binary node");
     }
 
     public void computeBestSplit(List<List<Double>> data, List<Double> results) {
@@ -47,7 +45,6 @@ public class BinaryNode {
                 this.attributeIndex = i;
             }
         }
-        System.out.println("Result: {" + sumSquaredError + "=" + splitPosition + "}");
     }
 
     private Map<Double, Double> computeSplits(List<Double> attributeData, List<Double> results) {
@@ -92,7 +89,6 @@ public class BinaryNode {
             }
             splitMap.put(ssr, currentSplitValue);
         }
-        System.out.println(splitMap);
         return splitMap;
     }
 
@@ -106,5 +102,4 @@ public class BinaryNode {
                 ", attributeIndex=" + attributeIndex +
                 '}';
     }
-
 }

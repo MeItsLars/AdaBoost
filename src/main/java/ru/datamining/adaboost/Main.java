@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Main {
 
@@ -18,6 +19,7 @@ public class Main {
         System.out.println("Preparing input data...");
 
         List<List<String>> classInputData = CsvReader.readCsvDataFile(file);
+        classInputData = classInputData.stream().map(input -> input.stream().map(value -> value.replace("\"", "")).collect(Collectors.toList())).collect(Collectors.toList());
 
         List<String> jobs = Arrays.asList("teacher", "health", "services", "at_home", "other");
         List<String> reason = Arrays.asList("home", "reputation", "course", "other");
@@ -58,8 +60,8 @@ public class Main {
             doubleData.add(Double.parseDouble(data.get(27)));
             doubleData.add(Double.parseDouble(data.get(28)));
             doubleData.add(Double.parseDouble(data.get(29)));
-            doubleData.add(Double.parseDouble(data.get(30).substring(1, data.get(30).length() - 1)));
-            doubleData.add(Double.parseDouble(data.get(31).substring(1, data.get(31).length() - 1)));
+            doubleData.add(Double.parseDouble(data.get(30)));
+            doubleData.add(Double.parseDouble(data.get(31)));
             doubleData.add(Double.parseDouble(data.get(32)));
 
             mappedInputData.add(doubleData);
@@ -69,7 +71,7 @@ public class Main {
         List<Double> expectedResults = new ArrayList<>();
 
         for (List<Double> data : mappedInputData) {
-            dataset.add(data.subList(30, 32));
+            dataset.add(data.subList(0, 32));
             expectedResults.add(data.get(32));
         }
 
@@ -79,49 +81,23 @@ public class Main {
         List<Double> testResults = expectedResults.subList(0, 600);
 
         System.out.println("Training AdaBoost...");
-        //AdaBoost adaBoost = new AdaBoost();
-        //adaBoost.train(trainData, trainResults, 30);
+        AdaBoost adaBoost = new AdaBoost();
+        adaBoost.train(trainData, trainResults, 30);
 
-        RegressionTree regressionTree = new RegressionTree(1500, 1);
+        RegressionTree regressionTree = new RegressionTree(3, 2);
         regressionTree.train(trainData, trainResults);
 
         System.out.println("Computing errors...");
         List<Double> errors = new ArrayList<>();
+        List<Double> regressionErrors = new ArrayList<>();
         for (int i = 0; i < testData.size(); i++) {
             List<Double> testEntry = testData.get(i);
             double expectedResult = testResults.get(i);
-            errors.add(Math.abs(expectedResult - regressionTree.predict(testEntry)));
+            errors.add(Math.abs(expectedResult - adaBoost.predict(testEntry)));
+            regressionErrors.add(Math.abs(expectedResult - regressionTree.predict(testEntry)));
         }
 
-        System.out.println("Average error: " + errors.stream().mapToDouble(i -> i).average().getAsDouble());
-
-        /*List<List<Double>> dataset = new ArrayList<>();
-
-        dataset.add(Arrays.asList(19.0, 59.0, 185.0));
-        dataset.add(Arrays.asList(22.0, 78.0, 188.0));
-        dataset.add(Arrays.asList(30.0, 70.0, 180.0));
-        dataset.add(Arrays.asList(40.0, 62.0, 168.0));
-        dataset.add(Arrays.asList(50.0, 73.0, 177.0));
-        dataset.add(Arrays.asList(60.0, 100.0, 210.0));
-        dataset.add(Arrays.asList(70.0, 70.0, 183.0));
-        dataset.add(Arrays.asList(80.0, 65.0, 173.0));
-        dataset.add(Arrays.asList(90.0, 55.0, 150.0));
-        dataset.add(Arrays.asList(100.0, 60.0, 167.0));
-
-        List<List<Double>> data = new ArrayList<>();
-        List<Double> expectedResult = new ArrayList<>();
-
-        for (List<Double> entry : dataset) {
-            data.add(Arrays.asList(entry.get(0), entry.get(1)));
-            expectedResult.add(entry.get(2));
-        }
-
-        AdaBoost adaBoost = new AdaBoost();
-        adaBoost.train(data, expectedResult);
-
-        double result = adaBoost.predict(Arrays.asList(60.0, 100.0));
-
-        System.out.println("Deze tantoe oude man is: " + result + "cm");*/
+        System.out.println("Average AdaBoost error: " + errors.stream().mapToDouble(i -> i).average().getAsDouble());
+        System.out.println("Average Regression Tree error: " + regressionErrors.stream().mapToDouble(i -> i).average().getAsDouble());
     }
-
 }
