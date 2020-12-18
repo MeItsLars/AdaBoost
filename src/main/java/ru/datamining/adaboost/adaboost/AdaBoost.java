@@ -18,7 +18,7 @@ public class AdaBoost {
             System.out.println("========== RUN " + i + " ==========");
             System.out.println(dataset);
             System.out.println(expectedResults);
-            Predictor predictor = new RegressionStump();
+            Predictor predictor = new RegressionTree(3, 5);
 
             // Train the predictor
             predictor.train(dataset, expectedResults);

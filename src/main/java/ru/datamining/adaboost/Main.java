@@ -1,7 +1,7 @@
 package ru.datamining.adaboost;
 
 import ru.datamining.adaboost.adaboost.AdaBoost;
-import ru.datamining.adaboost.adaboost.RegressionStump;
+import ru.datamining.adaboost.adaboost.RegressionTree;
 import ru.datamining.adaboost.util.CsvReader;
 
 import java.io.File;
@@ -79,15 +79,18 @@ public class Main {
         List<Double> testResults = expectedResults.subList(0, 600);
 
         System.out.println("Training AdaBoost...");
-        AdaBoost adaBoost = new AdaBoost();
-        adaBoost.train(trainData, trainResults);
+        //AdaBoost adaBoost = new AdaBoost();
+        //adaBoost.train(trainData, trainResults, 30);
+
+        RegressionTree regressionTree = new RegressionTree(1500, 1);
+        regressionTree.train(trainData, trainResults);
 
         System.out.println("Computing errors...");
         List<Double> errors = new ArrayList<>();
         for (int i = 0; i < testData.size(); i++) {
             List<Double> testEntry = testData.get(i);
             double expectedResult = testResults.get(i);
-            errors.add(Math.abs(expectedResult - adaBoost.predict(testEntry)));
+            errors.add(Math.abs(expectedResult - regressionTree.predict(testEntry)));
         }
 
         System.out.println("Average error: " + errors.stream().mapToDouble(i -> i).average().getAsDouble());
