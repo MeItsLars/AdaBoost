@@ -6,14 +6,12 @@ import ru.datamining.adaboost.util.CsvReader;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         File file = new File("./data/student-por.csv");
 
         System.out.println("Preparing input data...");
@@ -81,10 +79,10 @@ public class Main {
         List<Double> testResults = expectedResults.subList(0, 600);
 
         System.out.println("Training AdaBoost...");
-        AdaBoost adaBoost = new AdaBoost();
-        adaBoost.train(trainData, trainResults, 30);
+        AdaBoost adaBoost = new AdaBoost(30, 3, 2);
+        adaBoost.train(trainData, trainResults);
 
-        RegressionTree regressionTree = new RegressionTree(3, 2);
+        RegressionTree regressionTree = new RegressionTree(30, 2);
         regressionTree.train(trainData, trainResults);
 
         System.out.println("Computing errors...");
