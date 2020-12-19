@@ -8,17 +8,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Class for representing a binary node, used in regression trees.
+ */
 @Getter
 @Setter
 public class BinaryNode {
 
+    // The average of the values in this node
     private double average;
+    // After computing the best split: the current split position
     private double splitPosition;
+    // After computing the best split: the current sum of squared errors
     private double sumSquaredError = Integer.MAX_VALUE;
+    // The depth of this binary node in the regression tree
     private final int level;
+    // After computing the best split: the attribute index of the attribute that was split on
     private int attributeIndex;
+    // The left child binary node
     private BinaryNode leftChild;
+    // The right child binary node
     private BinaryNode rightChild;
+    // The parent binary node
     private BinaryNode parent;
 
     public BinaryNode(BinaryNode parent) {
@@ -31,14 +42,24 @@ public class BinaryNode {
         this.level = 0;
     }
 
+    /**
+     * Computes the best possible split by checking all possible attribute splits, and choosing the one with
+     * the lowest sum of squared error value.
+     *
+     * @param data    The input data
+     * @param results The expected results
+     */
     public void computeBestSplit(List<List<Double>> data, List<Double> results) {
-        // Compute best attribute to split on and its best split position,
-        // based on the minimum sum of squared residual of each of the attributes
+        // Loop through all attributes
         for (int i = 0; i < data.get(0).size(); i++) {
             int finalI = i;
+            // Create a column value of the current attribute index
             List<Double> attributeData = data.stream().map(list -> list.get(finalI)).collect(Collectors.toList());
+            // Compute the map containing all split values. The map maps SSR's to split indices
             Map<Double, Double> splitMap = computeSplits(attributeData, results);
+            // Choose the lowest SSR
             double ssr = splitMap.keySet().stream().mapToDouble(v -> v).min().orElse(Integer.MAX_VALUE);
+            // If it was lower than the current SSR, set the current SSR, split, and attribute index
             if (ssr < sumSquaredError) {
                 this.sumSquaredError = ssr;
                 this.splitPosition = splitMap.get(ssr);
@@ -47,15 +68,24 @@ public class BinaryNode {
         }
     }
 
+    /**
+     * Computes a map that maps SSR values to split indices for all possible splits on the given attribute value column.
+     *
+     * @param attributeData The attribute value column
+     * @param results       The set of expected results
+     * @return The resulting map
+     */
     private Map<Double, Double> computeSplits(List<Double> attributeData, List<Double> results) {
-        // Computes all possible splits with their sum  squared residuals
+        // Computes all different values, distinct and sorted
         List<Double> attributeDataCopy = attributeData.stream().distinct().sorted().collect(Collectors.toList());
         attributeDataCopy.add(0, attributeDataCopy.get(0) - 1);
         attributeDataCopy.add(attributeDataCopy.get(attributeDataCopy.size() - 1) + 1);
 
         Map<Double, Double> splitMap = new HashMap<>();
 
+        // Loop through all values
         for (int i = 0; i < attributeDataCopy.size() - 1; i++) {
+            // Create a split index by taking the average of the current value and the next value
             double currentSplitValue = (attributeDataCopy.get(i) + attributeDataCopy.get(i + 1)) / 2.0;
 
             // Compute the average of the data points smaller than or equal to the split position
@@ -87,19 +117,9 @@ public class BinaryNode {
                     ssr += Math.pow(results.get(j) - averageRight, 2);
                 }
             }
+            // Add the result to the map
             splitMap.put(ssr, currentSplitValue);
         }
         return splitMap;
-    }
-
-    @Override
-    public String toString() {
-        return "BinaryNode{" +
-                "average=" + average +
-                ", splitPosition=" + splitPosition +
-                ", sumSquaredError=" + sumSquaredError +
-                ", level=" + level +
-                ", attributeIndex=" + attributeIndex +
-                '}';
     }
 }

@@ -5,27 +5,43 @@ import lombok.RequiredArgsConstructor;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
+/**
+ * Class that represents an AdaBoost regressor.
+ */
 @RequiredArgsConstructor
-public class AdaBoost {
+public class AdaBoostRegressor {
 
+    // The amount of regression trees that this AdaBoost instance will use
     private final int regressorTreeCount;
+    // The maximum depth of the regression trees that this AdaBoost instance will use
     private final int regressorTreeDepth;
+    // The minimum number of observations in a regression tree before it can split
     private final int regressorTreeSplitObservations;
 
-    private final Map<Predictor, Double> trainResult = new HashMap<>();
+    // After training: contains the resulting regressors and their importance
+    private final Map<Regressor, Double> trainResult = new HashMap<>();
 
+    /**
+     * Trains the AdaBoost regressor on the given input data, with the given results
+     * The size of the 'data' list should be equal to the size of the 'expectedResults' list
+     *
+     * @param currentDataset The input data, formatted into a list of data entries
+     * @param currentResults The expected results, formatted into a list of values
+     */
     public void train(List<List<Double>> currentDataset, List<Double> currentResults) {
+        // Check that the dataset is not empty
         if (currentDataset.isEmpty()) {
             throw new IllegalArgumentException("The input dataset can not be empty.");
         }
 
+        // Check that the size of the dataset and the results is the same
         if (currentDataset.size() != currentResults.size()) {
             throw new IllegalArgumentException("The input dataset must have the same length as the result set.");
         }
 
+        // Check that there are is at least 1 regression tree
         if (regressorTreeCount <= 0) {
             throw new IllegalArgumentException("At least one regressor is required.");
         }
@@ -36,7 +52,6 @@ public class AdaBoost {
 
         // We start training 'regressorCount' predictors:
         for (int t = 0; t < regressorTreeCount; t++) {
-            System.out.println("=========================");
             // We randomly re-create the training set
             List<List<Double>> dataset = new ArrayList<>();
             List<Double> results = new ArrayList<>();
@@ -64,22 +79,18 @@ public class AdaBoost {
                     .boxed()
                     .collect(Collectors.toList());
             double maxErrorValue = errorValues.stream().mapToDouble(i -> i).max().orElseThrow() + 0.000001;
-            System.out.println(errorValues);
-            System.out.println(maxErrorValue);
 
             // Calculate the average loss
             List<Double> losses = errorValues.stream().map(i -> i / maxErrorValue).collect(Collectors.toList());
             double averageLoss = losses.stream().mapToDouble(i -> i).average().orElseThrow();
 
             if (averageLoss >= 0.5) {
-                System.out.println("====== ADABOOST TERMINATED EARLY =====");
                 break;
             }
 
             // Calculate the measure of confidence in the predictor. Low beta = High confidence
             double beta = averageLoss / (1 - averageLoss);
             trainResult.put(regressionTree, beta);
-            System.out.println("Saved a regression tree with beta " + beta);
 
             // Update all weights
             for (int i = 0; i < weights.length; i++) {
@@ -94,14 +105,21 @@ public class AdaBoost {
         }
     }
 
+    /**
+     * Predicts the output value of the given input entry using AdaBoost
+     *
+     * @param entry The input entry
+     * @return The predicted output
+     */
     public double predict(List<Double> entry) {
+        // First, create a map containing all predictions, mapped to their importance
+        // This map is sorted on the values of the keys
         Map<Double, Double> predictions = new TreeMap<>();
-        for (Map.Entry<Predictor, Double> mapEntry : trainResult.entrySet()) {
+        for (Map.Entry<Regressor, Double> mapEntry : trainResult.entrySet()) {
             predictions.put(mapEntry.getKey().predict(entry), mapEntry.getValue());
         }
 
-        System.out.println(predictions);
-
+        // Fill two arrays with the map values, so that we can loop by index later
         List<Double> valuePredictions = new ArrayList<>();
         List<Double> valueBetas = new ArrayList<>();
         predictions.forEach((d1, d2) -> {
@@ -109,12 +127,14 @@ public class AdaBoost {
             valueBetas.add(d2);
         });
 
+        // Calculate the value of the total half sum of all beta value's
         double totalHalfSum = 0;
         for (double beta : valueBetas) {
             totalHalfSum += Math.log(1.0 / beta);
         }
         totalHalfSum *= 0.5;
 
+        // Loop through all predictions, in order, until the log inequality is satisfied
         int resultIndex = -1;
         for (int i = 0; i < valuePredictions.size(); i++) {
             double totalSum = 0;
@@ -126,10 +146,12 @@ public class AdaBoost {
             }
         }
 
+        // If AdaBoost failed to find a result, something went wrong
         if (resultIndex == -1) {
             throw new IllegalStateException("The AdaBoost algorithm failed to produce a result.");
         }
 
+        // Return the resulting prediction
         return valuePredictions.get(resultIndex);
     }
 }

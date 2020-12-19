@@ -1,66 +1,64 @@
 package ru.datamining.adaboost;
 
-import ru.datamining.adaboost.adaboost.AdaBoost;
+import lombok.SneakyThrows;
+import ru.datamining.adaboost.adaboost.AdaBoostRegressor;
 import ru.datamining.adaboost.adaboost.RegressionTree;
-import ru.datamining.adaboost.util.CsvReader;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.*;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class Main {
 
+    // The output logger
+    private static final Logger LOGGER = Logger.getLogger("AdaBoost");
+
     public static void main(String[] args) {
-        File file = new File("./data/student-por.csv");
+        LOGGER.info("Preparing input data...");
+        File file = new File("./data/forestfires.csv");
 
-        System.out.println("Preparing input data...");
+        // Read the data value through a CSV file
+        List<List<String>> classInputData = readCsvDataFile(file);
 
-        List<List<String>> classInputData = CsvReader.readCsvDataFile(file);
-        classInputData = classInputData.stream().map(input -> input.stream().map(value -> value.replace("\"", "")).collect(Collectors.toList())).collect(Collectors.toList());
+        // Create the dataset associated nominal values
+        List<String> months = Arrays.asList("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec");
+        List<String> days = Arrays.asList("mon", "tue", "wed", "thu", "fri", "sat", "sun");
 
-        List<String> jobs = Arrays.asList("teacher", "health", "services", "at_home", "other");
-        List<String> reason = Arrays.asList("home", "reputation", "course", "other");
-        List<String> guardian = Arrays.asList("mother", "father", "other");
-
+        // Map the input string values which may be both nominal and numerical, to purely numerical values
         List<List<Double>> mappedInputData = new ArrayList<>();
         for (int i = 1; i < classInputData.size(); i++) {
             List<String> data = classInputData.get(i);
 
             List<Double> doubleData = new ArrayList<>();
-            doubleData.add(data.get(0).equals("GP") ? 0.0 : 1.0);
-            doubleData.add(data.get(1).equals("M") ? 0.0 : 1.0);
-            doubleData.add(Double.parseDouble(data.get(2)));
-            doubleData.add(data.get(3).equals("U") ? 0.0 : 1.0);
-            doubleData.add(data.get(4).equals("LE3") ? 0.0 : 1.0);
-            doubleData.add(data.get(5).equals("T") ? 0.0 : 1.0);
-            doubleData.add(Double.parseDouble(data.get(6)));
-            doubleData.add(Double.parseDouble(data.get(7)));
-            doubleData.add((double) jobs.indexOf(data.get(8)));
-            doubleData.add((double) jobs.indexOf(data.get(9)));
-            doubleData.add((double) reason.indexOf(data.get(10)));
-            doubleData.add((double) guardian.indexOf(data.get(11)));
-            doubleData.add(Double.parseDouble(data.get(12)));
-            doubleData.add(Double.parseDouble(data.get(13)));
-            doubleData.add(Double.parseDouble(data.get(14)));
-            doubleData.add(data.get(15).equals("no") ? 0.0 : 1.0);
-            doubleData.add(data.get(16).equals("no") ? 0.0 : 1.0);
-            doubleData.add(data.get(17).equals("no") ? 0.0 : 1.0);
-            doubleData.add(data.get(18).equals("no") ? 0.0 : 1.0);
-            doubleData.add(data.get(19).equals("no") ? 0.0 : 1.0);
-            doubleData.add(data.get(20).equals("no") ? 0.0 : 1.0);
-            doubleData.add(data.get(21).equals("no") ? 0.0 : 1.0);
-            doubleData.add(data.get(22).equals("no") ? 0.0 : 1.0);
-            doubleData.add(Double.parseDouble(data.get(23)));
-            doubleData.add(Double.parseDouble(data.get(24)));
-            doubleData.add(Double.parseDouble(data.get(25)));
-            doubleData.add(Double.parseDouble(data.get(26)));
-            doubleData.add(Double.parseDouble(data.get(27)));
-            doubleData.add(Double.parseDouble(data.get(28)));
-            doubleData.add(Double.parseDouble(data.get(29)));
-            doubleData.add(Double.parseDouble(data.get(30)));
-            doubleData.add(Double.parseDouble(data.get(31)));
-            doubleData.add(Double.parseDouble(data.get(32)));
+            for (String value : data) {
+                try {
+                    // Check if the input value can be parsed as a double
+                    double d = Double.parseDouble(value);
+                    doubleData.add(d);
+                } catch (NumberFormatException e) {
+                    // If not, check if it is a month value
+                    double d = months.indexOf(value);
+
+                    if (d >= 0) {
+                        doubleData.add(d);
+                    } else {
+                        // If not, check if it is a day value
+                        d = days.indexOf(value);
+
+                        if (d >= 0) {
+                            doubleData.add(d);
+                        } else {
+                            // If not, there is an error in the input data
+                            throw new IllegalArgumentException("Wrong format: " + value);
+                        }
+                    }
+                }
+            }
 
             mappedInputData.add(doubleData);
         }
@@ -68,34 +66,53 @@ public class Main {
         List<List<Double>> dataset = new ArrayList<>();
         List<Double> expectedResults = new ArrayList<>();
 
+        // We split the input data into a dataset and expected results
         for (List<Double> data : mappedInputData) {
-            dataset.add(data.subList(0, 32));
-            expectedResults.add(data.get(32));
+            dataset.add(data.subList(0, 12));
+            expectedResults.add(data.get(12));
         }
 
-        List<List<Double>> trainData = dataset.subList(0, 600);
-        List<Double> trainResults = expectedResults.subList(0, 600);
-        List<List<Double>> testData = dataset.subList(0, 600);
-        List<Double> testResults = expectedResults.subList(0, 600);
+        // We split the data and results into train and test data
+        List<List<Double>> trainData = dataset.subList(0, 300);
+        List<Double> trainResults = expectedResults.subList(0, 300);
+        List<List<Double>> testData = dataset.subList(300, 500);
+        List<Double> testResults = expectedResults.subList(300, 500);
 
-        System.out.println("Training AdaBoost...");
-        AdaBoost adaBoost = new AdaBoost(30, 3, 2);
-        adaBoost.train(trainData, trainResults);
+        LOGGER.info("Training AdaBoost...");
+        // We create an AdaBoost regressor and train it on the data
+        AdaBoostRegressor adaBoostRegressor = new AdaBoostRegressor(30, 3, 2);
+        adaBoostRegressor.train(trainData, trainResults);
 
+        // We create a regression tree and train it on the data
         RegressionTree regressionTree = new RegressionTree(30, 2);
         regressionTree.train(trainData, trainResults);
 
-        System.out.println("Computing errors...");
-        List<Double> errors = new ArrayList<>();
+        LOGGER.info("Computing error values...");
+        // We compute the error values for all test data for both AdaBoost and regression tree
+        List<Double> adaBoostErrors = new ArrayList<>();
         List<Double> regressionErrors = new ArrayList<>();
         for (int i = 0; i < testData.size(); i++) {
             List<Double> testEntry = testData.get(i);
             double expectedResult = testResults.get(i);
-            errors.add(Math.abs(expectedResult - adaBoost.predict(testEntry)));
+            adaBoostErrors.add(Math.abs(expectedResult - adaBoostRegressor.predict(testEntry)));
             regressionErrors.add(Math.abs(expectedResult - regressionTree.predict(testEntry)));
         }
 
-        System.out.println("Average AdaBoost error: " + errors.stream().mapToDouble(i -> i).average().getAsDouble());
-        System.out.println("Average Regression Tree error: " + regressionErrors.stream().mapToDouble(i -> i).average().getAsDouble());
+        // Print the resulting errors
+        LOGGER.log(Level.INFO, "Average AdaBoost error: {0}", adaBoostErrors.stream().mapToDouble(i -> i).average().orElseThrow());
+        LOGGER.log(Level.INFO, "Average Regression Tree error: {0}", regressionErrors.stream().mapToDouble(i -> i).average().orElseThrow());
+    }
+
+    /**
+     * Reads a .csv dataset into a list of entries
+     *
+     * @param file The input file
+     * @return The list of entries
+     */
+    @SneakyThrows
+    private static List<List<String>> readCsvDataFile(File file) {
+        return Files.readAllLines(file.toPath()).stream()
+                .map(input -> Arrays.asList(input.split(",")))
+                .collect(Collectors.toList());
     }
 }
