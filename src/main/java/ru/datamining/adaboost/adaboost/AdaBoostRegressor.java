@@ -47,10 +47,10 @@ public class AdaBoostRegressor {
         }
 
         // We initialize sample weights
-        double[] weights = new double[currentDataset.get(0).size()];
+        double[] weights = new double[currentDataset.size()];
         Arrays.fill(weights, 1.0 / (double) weights.length);
 
-        // We start training 'regressorCount' predictors:
+        // We start training 'regressorTreeCount' predictors:
         for (int t = 0; t < regressorTreeCount; t++) {
             // We randomly re-create the training set
             List<List<Double>> dataset = new ArrayList<>();
@@ -112,46 +112,7 @@ public class AdaBoostRegressor {
      * @return The predicted output
      */
     public double predict(List<Double> entry) {
-        // First, create a map containing all predictions, mapped to their importance
-        // This map is sorted on the values of the keys
-        Map<Double, Double> predictions = new TreeMap<>();
-        for (Map.Entry<Regressor, Double> mapEntry : trainResult.entrySet()) {
-            predictions.put(mapEntry.getKey().predict(entry), mapEntry.getValue());
-        }
-
-        // Fill two arrays with the map values, so that we can loop by index later
-        List<Double> valuePredictions = new ArrayList<>();
-        List<Double> valueBetas = new ArrayList<>();
-        predictions.forEach((d1, d2) -> {
-            valuePredictions.add(d1);
-            valueBetas.add(d2);
-        });
-
-        // Calculate the value of the total half sum of all beta value's
-        double totalHalfSum = 0;
-        for (double beta : valueBetas) {
-            totalHalfSum += Math.log(1.0 / beta);
-        }
-        totalHalfSum *= 0.5;
-
-        // Loop through all predictions, in order, until the log inequality is satisfied
-        int resultIndex = -1;
-        for (int i = 0; i < valuePredictions.size(); i++) {
-            double totalSum = 0;
-            for (int j = 0; j <= i; j++) {
-                totalSum += Math.log(1.0 / valueBetas.get(j));
-            }
-            if (totalSum >= totalHalfSum) {
-                resultIndex = i;
-            }
-        }
-
-        // If AdaBoost failed to find a result, something went wrong
-        if (resultIndex == -1) {
-            throw new IllegalStateException("The AdaBoost algorithm failed to produce a result.");
-        }
-
-        // Return the resulting prediction
-        return valuePredictions.get(resultIndex);
+        double totalSum = trainResult.values().stream().mapToDouble(d -> d).sum();
+        return trainResult.entrySet().stream().mapToDouble(e -> (e.getKey().predict(entry) * e.getValue()) / totalSum).sum();
     }
 }
